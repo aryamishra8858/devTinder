@@ -1,29 +1,34 @@
 const express = require("express");
+const connectDB = require("./config/database");
 const app = express();
+const User = require("./models/user");
 
-app.use("/",(err,req, res, next) => {
-    if (err) {
-        return res.status(500).send("something went wrong");//Log your error
-    }   
+app.post("/signup", async (req,res)=>{
+  //Creating a new instance of the user model
+  const user = new User({
+    firstName: "Dhoni",
+    lastName: "Singh",
+    emailId: "dhoni123@gmail.com",
+    password: "Dhoni@123",
 });
 
-app.get("/getUserData",(req, res) => {
-    // try{
-        //Logic all DB call and get user data
-         throw new Error("uiksjhj"); // Simulating an error
-    res.send("User data send"); 
-    // } catch (err) {
-    //     res.status(500).send("Internal Server Error");
-    // }
-   
-}); 
-
-app.use("/",(err,req, res, next) => {
-    if (err) {
-        return res.status(500).send("something went wrong");//Log your error
-    }   
+try{
+  await user.save();
+res.send("User created successfully");
+} catch(error) {
+  res.status(500).send("Internal Server Error" + error.message);
+}
 });
 
-app.listen(7000, () => {
-  console.log("Server is running on port 7000");
-});
+
+connectDB()
+  .then(() => {
+    console.log("MongoDB connected successfully");
+    app.listen(7000, () => {
+      console.log("Server is running on port 7000");
+    });
+  })
+  .catch(error => {
+    console.error("MongoDB connection error:", error);
+    // Exit the process with failure
+  });
