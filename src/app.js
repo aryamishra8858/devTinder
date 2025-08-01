@@ -5,7 +5,17 @@ const User = require("./models/user");
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
-app.post("/signup", async (req, res) => {});
+app.post("/signup", async (req, res) => {
+  console.log(req.body);
+  const userData = req.body;
+  try {
+    const user = new User(userData);
+    await user.save();
+    res.status(201).send("User created successfully");
+  } catch (error) {
+    res.status(400).send("Something went wrong: " + error.message);
+  }
+});
 
 // Get user by emailId
 app.get("/user", async (req, res) => {
