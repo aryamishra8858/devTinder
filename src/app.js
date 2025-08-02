@@ -2,18 +2,54 @@ const express = require("express");
 const connectDB = require("./config/database");
 const app = express();
 const User = require("./models/user");
+const { validateSignupData } = require("./utils/validation");
+const bcrypt = require("bcrypt");
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
 app.post("/signup", async (req, res) => {
-  console.log(req.body);
-  const userData = req.body;
   try {
-    const user = new User(userData);
+    // Validation of data
+    validateSignupData(req);
+
+    const { firstName, lastName, emailId, password } = req.body;
+    //Encrypt the password
+    const passwordHash = await bcrypt.hash(password, 10);
+    console.log(passwordHash);
+    // Creating a new instance of User model
+
+    // console.log(req.body);
+    const userData = req.body;
+
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash, // Use the hashed password
+    });
     await user.save();
-    res.status(201).send("User created successfully");
+    res.send("User created successfully");
   } catch (error) {
-    res.status(400).send("Something went wrong: " + error.message);
+    res.status(400).send("ERROR: " + error.message);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+
+    const user = await User.findOne({ emailId: emailId });
+    if (!user) {
+      throw new Error("EmailId is not found in the database");
+    }
+    const isPaasswordValid = await bcrypt.compare(password);
+    if (isPaasswordValid) {
+     res.send("Login successful");
+    } else {
+      throw new Error("Invalid password");
+    }
+  } catch (error) {
+    res.status(400).send("ERROR: " + error.message);
   }
 });
 
@@ -66,7 +102,7 @@ app.patch("/user/:userId", async (req, res) => {
       "password",
       "age",
       "gender",
-      "skills",  
+      "skills",
     ];
     const isUpdateAllowed = Object.keys(data).every((key) =>
       ALLOWED_UPDATES.includes(key)
@@ -74,7 +110,7 @@ app.patch("/user/:userId", async (req, res) => {
     if (!isUpdateAllowed) {
       throw new Error("Invalid update fields");
     }
-    if(data?.skills.length > 20) {
+    if (data?.skills.length > 20) {
       throw new Error("Skills array cannot exceed 20 items");
     }
     const user = await User.findByIdAndUpdate({ _id: userId }, data, {
